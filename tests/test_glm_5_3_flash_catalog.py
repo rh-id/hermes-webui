@@ -73,22 +73,33 @@ def test_glm_5_3_flash_in_provider_models():
 
 
 def test_glm_5_3_flash_ordered_base_then_flash_then_glm_5_1():
-    """Flash sibling must sit between its base glm-5.3 and glm-5.1 (newest-first).
+    """Flash sibling must sit directly after its base glm-5.3, then glm-5.2 (newest-first).
 
     Mirrors the existing glm-4.5 -> glm-4.5-flash pattern: base first, then the
-    flash variant of the same generation.
+    flash variant of the same generation. The sibling-adjacency contract is
+    pinned in BOTH catalogs: this test pins it for the zai provider catalog,
+    and test_glm_5_3_flash_positioned_after_glm_5_3_in_zai_fallback_block pins
+    the same adjacency for the Z.AI fallback block.
     """
     zai_models = cfg._PROVIDER_MODELS.get("zai", [])
+    ids = [m["id"] for m in zai_models]
     indices = {}
     for i, model in enumerate(zai_models):
-        if model["id"] in ("glm-5.3", "glm-5.3-flash", "glm-5.1"):
+        if model["id"] in ("glm-5.3", "glm-5.3-flash", "glm-5.2", "glm-5.1"):
             indices[model["id"]] = i
     assert "glm-5.3" in indices, "glm-5.3 not found in zai models"
     assert "glm-5.3-flash" in indices, "glm-5.3-flash not found in zai models"
+    assert "glm-5.2" in indices, "glm-5.2 not found in zai models"
     assert "glm-5.1" in indices, "glm-5.1 not found in zai models"
-    assert indices["glm-5.3"] < indices["glm-5.3-flash"], (
-        f"glm-5.3 (index {indices['glm-5.3']}) must appear before "
-        f"glm-5.3-flash (index {indices['glm-5.3-flash']})"
+    assert indices["glm-5.3-flash"] == indices["glm-5.3"] + 1, (
+        f"Expected glm-5.3-flash immediately after glm-5.3 in the zai provider "
+        f"catalog; glm-5.3 index {indices['glm-5.3']}, glm-5.3-flash index "
+        f"{indices['glm-5.3-flash']}; got {ids}"
+    )
+    assert indices["glm-5.2"] == indices["glm-5.3-flash"] + 1, (
+        f"Expected glm-5.2 immediately after glm-5.3-flash in the zai provider "
+        f"catalog; glm-5.3-flash index {indices['glm-5.3-flash']}, glm-5.2 "
+        f"index {indices['glm-5.2']}; got {ids}"
     )
     assert indices["glm-5.3-flash"] < indices["glm-5.1"], (
         f"glm-5.3-flash (index {indices['glm-5.3-flash']}) must appear before "
